@@ -1,0 +1,7 @@
+name = "sheets-demo"
+compatibility_date = "2026-04-01"
+pages_build_output_dir = "public"
+
+# GOOGLE_CLIENT_ID and SHEET_URL are set per environment in the
+# Cloudflare dashboard (Pages > sheets-demo > Settings > Variables and Secrets),
+# or in .dev.vars for local development. They're intentionally not set here.

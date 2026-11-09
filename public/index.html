@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sheets cell randomizer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+  :root {
+    --bg: #E9EEF3;
+    --surface: #FFFFFF;
+    --ink: #17212B;
+    --muted: #5A6875;
+    --line: #C9D3DC;
+    --accent: #2148C9;
+    --accent-ink: #FFFFFF;
+    --hit: #FFC94A;
+    --hit-ink: #2A1E00;
+    --error: #B42318;
+    --ok: #1E7A46;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #10161C;
+      --surface: #19222B;
+      --ink: #E6ECF1;
+      --muted: #93A1AE;
+      --line: #2E3A46;
+      --accent: #6E8FFF;
+      --accent-ink: #0B1330;
+      --hit: #FFC94A;
+      --hit-ink: #2A1E00;
+      --error: #FF8A80;
+      --ok: #6FD39A;
+      color-scheme: dark;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+  }
+  .wrap {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 40px 24px 64px;
+    display: grid;
+    grid-template-columns: minmax(0, 340px) minmax(0, 1fr);
+    gap: 40px;
+    align-items: start;
+  }
+  @media (max-width: 800px) {
+    .wrap { grid-template-columns: 1fr; gap: 28px; padding-top: 24px; }
+  }
+  h1 { font-size: 1.75rem; line-height: 1.15; margin: 0 0 8px; font-weight: 700; letter-spacing: -0.01em; }
+  .lede { color: var(--muted); margin: 0 0 28px; max-width: 34ch; }
+  label, .label { display: block; font-weight: 600; font-size: 0.875rem; margin: 0 0 6px; }
+  .config-value { margin: 0; font-size: 0.9375rem; overflow-wrap: anywhere; }
+  .config-value a { color: var(--accent); }
+  .hint { color: var(--muted); font-size: 0.8125rem; margin: 6px 0 0; }
+  .field { margin-bottom: 20px; }
+  input[type=text] {
+    width: 100%;
+    font: inherit;
+    font-size: 0.9375rem;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--surface);
+    color: var(--ink);
+  }
+  input[type=text]:focus-visible, button:focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: 2px;
+  }
+  button {
+    font: inherit;
+    font-weight: 600;
+    border-radius: 6px;
+    padding: 10px 16px;
+    cursor: pointer;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--ink);
+  }
+  button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  button:disabled { opacity: 0.45; cursor: not-allowed; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .status { font-size: 0.875rem; margin-top: 14px; color: var(--muted); min-height: 1.5em; }
+  .status.err { color: var(--error); }
+  .status.ok { color: var(--ok); }
+
+  .notice {
+    border-left: 4px solid var(--error);
+    background: var(--surface);
+    padding: 12px 14px;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    margin-bottom: 24px;
+  }
+
+  .board-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: end;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+  .sheet-name { font-size: 1.125rem; font-weight: 600; margin: 0; }
+  .sheet-sub { color: var(--muted); font-size: 0.875rem; margin: 2px 0 0; }
+  .go {
+    font-size: 1.0625rem;
+    padding: 14px 22px;
+  }
+
+  .grid-scroll { overflow-x: auto; }
+  table.grid {
+    border-collapse: collapse;
+    width: 100%;
+    min-width: 360px;
+    background: var(--surface);
+    font-variant-numeric: tabular-nums;
+  }
+  .grid th, .grid td {
+    border: 1px solid var(--line);
+    padding: 0 12px;
+    height: 34px;
+    font-size: 0.9375rem;
+  }
+  .grid thead th {
+    font-weight: 600;
+    color: var(--muted);
+    font-size: 0.8125rem;
+    text-align: center;
+    background: var(--bg);
+  }
+  .grid tbody th {
+    width: 44px;
+    text-align: center;
+    color: var(--muted);
+    font-weight: 500;
+    font-size: 0.8125rem;
+    background: var(--bg);
+  }
+  .grid td { text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 0; }
+  .grid td.hit {
+    background: var(--hit);
+    color: var(--hit-ink);
+    font-weight: 700;
+    animation: land 900ms ease-out;
+  }
+  @keyframes land {
+    0% { box-shadow: inset 0 0 0 3px var(--accent); transform: scale(1.06); }
+    100% { box-shadow: inset 0 0 0 0 transparent; transform: scale(1); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .grid td.hit { animation: none; }
+  }
+  .empty {
+    border: 1px dashed var(--line);
+    border-radius: 6px;
+    padding: 48px 24px;
+    text-align: center;
+    color: var(--muted);
+  }
+
+  .log { margin-top: 28px; }
+  .log h2 { font-size: 0.9375rem; margin: 0 0 8px; }
+  .log ol { list-style: none; margin: 0; padding: 0; font-size: 0.875rem; color: var(--muted); max-height: 220px; overflow-y: auto; }
+  .log li { padding: 6px 0; border-top: 1px solid var(--line); }
+  .log li b { color: var(--ink); font-weight: 600; }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <section>
+    <h1>Sheets cell randomizer</h1>
+    <p class="lede">Loads a Google Sheet, then writes a random number into a random cell between A1 and C16.</p>
+
+    <div id="fileNotice" class="notice" hidden>
+      Google sign-in doesn’t work when this page is opened as a file. Run it locally with <code>npx wrangler pages dev</code> instead.
+    </div>
+
+    <div id="configNotice" class="notice" hidden></div>
+
+    <div class="field">
+      <p class="label">Google Sheet</p>
+      <p class="config-value"><a id="sheetLink" href="#" target="_blank" rel="noopener">Loading…</a></p>
+      <p class="hint">Set by the <code>SHEET_URL</code> environment variable. The tab in the link (gid) is used; if there’s none, the first tab is used.</p>
+    </div>
+
+    <div class="row">
+      <button id="signInBtn" class="primary" disabled>Sign in with Google</button>
+      <button id="loadBtn" disabled>Load sheet</button>
+    </div>
+    <div id="status" class="status" role="status" aria-live="polite"></div>
+  </section>
+
+  <section>
+    <div class="board-head">
+      <div>
+        <p class="sheet-name" id="sheetName">No sheet loaded</p>
+        <p class="sheet-sub" id="sheetSub">Range A1:C16</p>
+      </div>
+      <div class="row">
+        <button id="reloadBtn" disabled>Reload</button>
+        <button id="randomBtn" class="primary go" disabled>Write random number</button>
+      </div>
+    </div>
+
+    <div id="gridHost">
+      <div class="empty">Sign in and load a sheet to see cells A1 to C16 here.</div>
+    </div>
+
+    <div class="log">
+      <h2>Activity</h2>
+      <ol id="log"></ol>
+    </div>
+  </section>
+</main>
+
+<script>
+(() => {
+  const SCOPE = "https://www.googleapis.com/auth/spreadsheets";
+  const API = "https://sheets.googleapis.com/v4/spreadsheets";
+  const COLS = ["A", "B", "C"];
+  const ROWS = 16;
+
+  const $ = (id) => document.getElementById(id);
+  const els = {
+    sheetLink: $("sheetLink"), configNotice: $("configNotice"),
+    signIn: $("signInBtn"), load: $("loadBtn"), reload: $("reloadBtn"), random: $("randomBtn"),
+    status: $("status"), gridHost: $("gridHost"), log: $("log"),
+    sheetName: $("sheetName"), sheetSub: $("sheetSub"),
+  };
+
+  let tokenClient = null;
+  let tokenClientFor = "";
+  let accessToken = null;
+  let sheet = null; // { id, title, tabTitle }
+  let values = [];
+  let lastHit = null;
+  let config = null; // { clientId, sheetUrl } from /config (Cloudflare env vars)
+
+  if (location.protocol === "file:") $("fileNotice").hidden = false;
+
+  function showConfigError(msg) {
+    els.configNotice.textContent = msg;
+    els.configNotice.hidden = false;
+    els.sheetLink.textContent = "Not configured";
+    els.sheetLink.removeAttribute("href");
+  }
+
+  async function loadConfig() {
+    let body;
+    try {
+      const res = await fetch("/config", { cache: "no-store" });
+      body = await res.json();
+    } catch (e) {
+      return showConfigError("Couldn’t load /config. Deploy to Cloudflare Pages or run locally with “npx wrangler pages dev”.");
+    }
+    if (body.missing && body.missing.length) {
+      return showConfigError("Missing environment variable(s): " + body.missing.join(", ") + ". Set them in Cloudflare Pages (or .dev.vars locally) and redeploy.");
+    }
+    if (!parseSheetUrl(body.sheetUrl)) {
+      return showConfigError("SHEET_URL doesn’t look like a Google Sheets link. It should contain /spreadsheets/d/<id>.");
+    }
+    config = body;
+    els.sheetLink.href = config.sheetUrl;
+    els.sheetLink.textContent = config.sheetUrl;
+    els.signIn.disabled = false;
+  }
+
+  function setStatus(msg, kind = "") {
+    els.status.textContent = msg;
+    els.status.className = "status" + (kind ? " " + kind : "");
+  }
+
+  function log(html) {
+    const li = document.createElement("li");
+    const t = new Date().toLocaleTimeString();
+    li.innerHTML = `<b>${t}</b> ${html}`;
+    els.log.prepend(li);
+  }
+
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+  // ---- Auth ----
+  function getTokenClient() {
+    const id = config && config.clientId;
+    if (!id) throw new Error("GOOGLE_CLIENT_ID isn’t configured.");
+    if (!window.google || !google.accounts || !google.accounts.oauth2) {
+      throw new Error("Google sign-in library hasn’t loaded yet. Check your connection and try again.");
+    }
+    if (!tokenClient || tokenClientFor !== id) {
+      tokenClient = google.accounts.oauth2.initTokenClient({ client_id: id, scope: SCOPE, callback: () => {} });
+      tokenClientFor = id;
+    }
+    return tokenClient;
+  }
+
+  function requestToken(prompt = "") {
+    return new Promise((resolve, reject) => {
+      let client;
+      try { client = getTokenClient(); } catch (e) { return reject(e); }
+      client.callback = (resp) => {
+        if (resp.error) return reject(new Error("Sign-in failed: " + resp.error));
+        accessToken = resp.access_token;
+        resolve(accessToken);
+      };
+      client.error_callback = (err) => reject(new Error("Sign-in closed or blocked (" + (err.type || "unknown") + ")."));
+      client.requestAccessToken({ prompt });
+    });
+  }
+
+  // ---- API helper with one retry on expired token ----
+  async function api(path, opts = {}, retried = false) {
+    if (!accessToken) await requestToken();
+    const res = await fetch(API + path, {
+      ...opts,
+      headers: { Authorization: "Bearer " + accessToken, "Content-Type": "application/json", ...(opts.headers || {}) },
+    });
+    if (res.status === 401 && !retried) {
+      accessToken = null;
+      await requestToken();
+      return api(path, opts, true);
+    }
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const msg = body.error && body.error.message ? body.error.message : res.statusText;
+      throw new Error(`${res.status}: ${msg}`);
+    }
+    return body;
+  }
+
+  // ---- Sheet helpers ----
+  function parseSheetUrl(url) {
+    const m = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+    if (!m) return null;
+    const g = url.match(/[#&?]gid=(\d+)/);
+    return { id: m[1], gid: g ? Number(g[1]) : null };
+  }
+
+  const quoteTab = (t) => "'" + t.replace(/'/g, "''") + "'";
+
+  async function loadSheet() {
+    const parsed = parseSheetUrl(config.sheetUrl);
+    if (!parsed) throw new Error("SHEET_URL doesn’t look like a Google Sheets link. It should contain /spreadsheets/d/<id>.");
+    setStatus("Loading sheet…");
+    const meta = await api(`/${parsed.id}?fields=properties.title,sheets.properties(sheetId,title)`);
+    const tabs = meta.sheets.map((s) => s.properties);
+    const tab = (parsed.gid !== null && tabs.find((t) => t.sheetId === parsed.gid)) || tabs[0];
+    sheet = { id: parsed.id, title: meta.properties.title, tabTitle: tab.title };
+    els.sheetName.textContent = sheet.title;
+    els.sheetSub.textContent = `Tab “${sheet.tabTitle}”, range A1:C16`;
+    await readValues();
+    log(`Loaded <b>${esc(sheet.title)}</b> / ${esc(sheet.tabTitle)}`);
+    els.reload.disabled = false;
+    els.random.disabled = false;
+    setStatus("Sheet loaded.", "ok");
+  }
+
+  async function readValues() {
+    const range = encodeURIComponent(quoteTab(sheet.tabTitle) + "!A1:C16");
+    const data = await api(`/${sheet.id}/values/${range}?majorDimension=ROWS`);
+    values = data.values || [];
+    renderGrid();
+  }
+
+  function renderGrid() {
+    let html = '<div class="grid-scroll"><table class="grid"><thead><tr><th></th>';
+    for (const c of COLS) html += `<th scope="col">${c}</th>`;
+    html += "</tr></thead><tbody>";
+    for (let r = 0; r < ROWS; r++) {
+      html += `<tr><th scope="row">${r + 1}</th>`;
+      for (let c = 0; c < COLS.length; c++) {
+        const v = (values[r] && values[r][c] != null) ? values[r][c] : "";
+        const isHit = lastHit && lastHit.r === r && lastHit.c === c;
+        html += `<td${isHit ? ' class="hit"' : ""} title="${COLS[c]}${r + 1}">${esc(v)}</td>`;
+      }
+      html += "</tr>";
+    }
+    html += "</tbody></table></div>";
+    els.gridHost.innerHTML = html;
+  }
+
+  async function writeRandom() {
+    const r = Math.floor(Math.random() * ROWS);
+    const c = Math.floor(Math.random() * COLS.length);
+    const n = Math.floor(Math.random() * 1000) + 1;
+    const a1 = `${COLS[c]}${r + 1}`;
+    const range = quoteTab(sheet.tabTitle) + "!" + a1;
+    setStatus(`Writing ${n} to ${a1}…`);
+    await api(`/${sheet.id}/values/${encodeURIComponent(range)}?valueInputOption=USER_ENTERED`, {
+      method: "PUT",
+      body: JSON.stringify({ range, majorDimension: "ROWS", values: [[n]] }),
+    });
+    lastHit = { r, c };
+    await readValues(); // re-read so the grid shows what the sheet really holds
+    log(`Wrote <b>${n}</b> to <b>${a1}</b>`);
+    setStatus(`Wrote ${n} to ${a1}.`, "ok");
+  }
+
+  // ---- Wiring ----
+  async function guarded(btn, fn) {
+    const all = [els.signIn, els.load, els.reload, els.random];
+    const prev = all.map((b) => b.disabled);
+    all.forEach((b) => (b.disabled = true));
+    try {
+      await fn();
+    } catch (e) {
+      setStatus(e.message, "err");
+      log(`Error: ${esc(e.message)}`);
+    } finally {
+      all.forEach((b, i) => (b.disabled = prev[i]));
+      els.load.disabled = !accessToken;
+      els.reload.disabled = !sheet;
+      els.random.disabled = !sheet;
+      els.signIn.disabled = !config;
+    }
+  }
+
+  els.signIn.addEventListener("click", () => guarded(els.signIn, async () => {
+    setStatus("Waiting for Google sign-in…");
+    await requestToken("consent");
+    els.signIn.textContent = "Signed in";
+    setStatus("Signed in. Now load your sheet.", "ok");
+    log("Signed in");
+  }));
+  els.load.addEventListener("click", () => guarded(els.load, loadSheet));
+  els.reload.addEventListener("click", () => guarded(els.reload, async () => {
+    setStatus("Reloading…");
+    await readValues();
+    setStatus("Reloaded.", "ok");
+  }));
+  els.random.addEventListener("click", () => guarded(els.random, writeRandom));
+
+  loadConfig();
+})();
+</script>
+</body>
+</html>
