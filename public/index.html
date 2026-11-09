@@ -187,7 +187,7 @@
     <p class="lede">Loads a Google Sheet, then writes a random number into a random cell between A1 and C16.</p>
 
     <div id="fileNotice" class="notice" hidden>
-      Google sign-in doesn’t work when this page is opened as a file. Run it locally with <code>npx wrangler pages dev</code> instead.
+      Google sign-in doesn’t work when this page is opened as a file. Run it locally with <code>npx wrangler dev</code> instead.
     </div>
 
     <div id="configNotice" class="notice" hidden></div>
@@ -266,10 +266,10 @@
       const res = await fetch("/config", { cache: "no-store" });
       body = await res.json();
     } catch (e) {
-      return showConfigError("Couldn’t load /config. Deploy to Cloudflare Pages or run locally with “npx wrangler pages dev”.");
+      return showConfigError("Couldn’t load /config. Deploy to Cloudflare or run locally with “npx wrangler dev”.");
     }
     if (body.missing && body.missing.length) {
-      return showConfigError("Missing environment variable(s): " + body.missing.join(", ") + ". Set them in Cloudflare Pages (or .dev.vars locally) and redeploy.");
+      return showConfigError("Missing environment variable(s): " + body.missing.join(", ") + ". Set them in the Cloudflare dashboard (or .dev.vars locally).");
     }
     if (!parseSheetUrl(body.sheetUrl)) {
       return showConfigError("SHEET_URL doesn’t look like a Google Sheets link. It should contain /spreadsheets/d/<id>.");

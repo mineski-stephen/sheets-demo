@@ -1,4 +1,4 @@
-# Copy to .dev.vars for local development with `npx wrangler pages dev`.
+# Copy to .dev.vars for local development with `npx wrangler dev`.
 # Keep SHEET_URL in quotes: an unquoted "#gid=..." would be read as a comment.
 GOOGLE_CLIENT_ID="1234-abc.apps.googleusercontent.com"
 SHEET_URL="https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/edit#gid=0"

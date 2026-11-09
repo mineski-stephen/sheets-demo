@@ -1,7 +1,15 @@
 name = "sheets-demo"
+main = "src/worker.js"
 compatibility_date = "2026-04-01"
-pages_build_output_dir = "public"
 
-# GOOGLE_CLIENT_ID and SHEET_URL are set per environment in the
-# Cloudflare dashboard (Pages > sheets-demo > Settings > Variables and Secrets),
-# or in .dev.vars for local development. They're intentionally not set here.
+# GOOGLE_CLIENT_ID and SHEET_URL are set in the Cloudflare dashboard
+# (Workers & Pages > sheets-demo > Settings > Variables and Secrets),
+# or in .dev.vars for local development. keep_vars stops `wrangler deploy`
+# from wiping the dashboard values on each deploy.
+keep_vars = true
+
+# Static files (index.html) are served from ./public. Requests that don't match
+# a file, such as /config, go to src/worker.js.
+[assets]
+directory = "./public"
+binding = "ASSETS"
